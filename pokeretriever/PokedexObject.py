@@ -1,5 +1,7 @@
 import abc
-
+"""
+This module contains the abstract and concrete classes for all objects that the Pokedex creates
+"""
 
 class PokedexObject(abc.ABC):
     """
@@ -18,16 +20,24 @@ class PokedexObject(abc.ABC):
 
     @property
     def name(self):
+        """
+        Name of object
+        :return: name
+        """
         return self._name
 
     @property
     def poke_id(self):
+        """
+        ID of object
+        :return: ID
+        """
         return self._id
 
 
 class Pokemon(PokedexObject):
     """
-    Pokemon Object
+    Pokemon Object that is created from the PokeAPI
     """
     def __init__(self, height, weight, stats, types, abilities, moves, **kwargs):
         """
@@ -51,14 +61,27 @@ class Pokemon(PokedexObject):
 
     @property
     def height(self):
+        """
+        Height of the pokemon
+        :return: int
+        """
         return self._height
 
     @property
     def weight(self):
+        """
+        Weight of the pokemon
+        :return:
+        """
         return self._weight
 
     @property
     def stats(self):
+        """
+        List of stats of the pokemon
+        :return: If expanded -> return list of PokeStat objects
+                else -> return formatted string list of stats
+        """
         stat_list = []
         if self._expanded:
             return self._stats
@@ -72,7 +95,8 @@ class Pokemon(PokedexObject):
 
     def stat_list(self):
         """
-        Returns the Pokemons extended stats.
+        Returns the Pokemons stat names in a list.
+        Used as a helper method for creating PokeStat objects
         :return: a list representing the Pokemons extended stats
         """
         stat_list = []
@@ -83,11 +107,21 @@ class Pokemon(PokedexObject):
 
     @stats.setter
     def stats(self, value):
+        """
+        Stats setter
+        Only used when expanded is flagged as true
+        :param value: List of PokeStat objects
+        :return:
+        """
         self._expanded = True
         self._stats = value
 
     @property
     def types(self):
+        """
+        List of types for the Pokemon
+        :return: String containing the pokemon types
+        """
         list_type = ''
         for types in self._types:
             type_dict = types['type']
@@ -97,9 +131,13 @@ class Pokemon(PokedexObject):
 
     @property
     def abilities(self):
+        """
+        List of pokemon abilities
+        :return: If expanded -> return list of PokeAbility objects
+        else -> return string list of ability names
+        """
         ability_list = []
         if self._expanded:
-
             return self._abilities
         else:
             for ability in self._abilities:
@@ -108,6 +146,11 @@ class Pokemon(PokedexObject):
             return "\n".join(ability_list)
 
     def ability_list(self):
+        """
+        Gets a list of ability names
+        Helper method for creating PokeAbility objects
+        :return:
+        """
         ability_list = []
         for ability in self._abilities:
             ability_list.append(ability['ability']['name'])
@@ -115,11 +158,22 @@ class Pokemon(PokedexObject):
 
     @abilities.setter
     def abilities(self, value):
+        """
+        Abilities setter
+        Used only when expanded is true
+        :param value: list of PokeAbility objects
+        :return:
+        """
         self._expanded = True
         self._abilities = value
 
     @property
     def moves(self):
+        """
+        List of pokemon moves
+        :return: If expanded -> return list of PokeMove objects
+        else -> return string list of move names and some details
+        """
         move_list = []
         if self._expanded:
             return self._moves
@@ -131,6 +185,11 @@ class Pokemon(PokedexObject):
         return "\n".join(move_list)
 
     def move_list(self):
+        """
+        Gets a list of move names
+        Helper method for creating PokeMove objects
+        :return:
+        """
         move_list = []
         for move in self._moves:
             move_list.append(move['move']['name'])
@@ -138,10 +197,20 @@ class Pokemon(PokedexObject):
 
     @moves.setter
     def moves(self, value):
+        """
+        Moves setter
+        Used only when expanded is true
+        :param value: list of PokeMove objects
+        :return:
+        """
         self._expanded = True
         self._moves = value
 
     def __str__(self):
+        """
+        toString for Pokemon
+        :return: formatted string containing details of the Pokemon
+        """
         if self._expanded:
             expanded_abilities = ""
             expanded_moves = ""
@@ -203,10 +272,18 @@ class PokemonAbility(PokedexObject):
 
     @property
     def generation(self):
+        """
+        Generation of the ability
+        :return: string name of the generation
+        """
         return self._generation['name']
 
     @property
     def effect(self):
+        """
+        Gets expanded list of the ability effects
+        :return:
+        """
         list_effect = []
         for effect in self._effect:
             if effect['language']['name'] == 'en':
@@ -215,6 +292,10 @@ class PokemonAbility(PokedexObject):
 
     @property
     def short_effect(self):
+        """
+        Gets shortened list of ability effects
+        :return:
+        """
         list_short_effect = []
         for short_effect in self._effect:
             if short_effect['language']['name'] == 'en':
@@ -223,12 +304,20 @@ class PokemonAbility(PokedexObject):
 
     @property
     def pokemon(self):
+        """
+        Get list of pokemon that have the ability
+        :return:
+        """
         list_pokemon = []
         for pokemon in self._pokemon:
             list_pokemon.append(pokemon['pokemon']['name'])
         return ", ".join(list_pokemon)
 
     def __str__(self):
+        """
+        Formatted string of the ability containing the details
+        :return:
+        """
         return f"Name: {self.name}\n" \
                f"ID: {self.poke_id}\n" \
                f"Generation: {self.generation}\n" \
@@ -246,7 +335,7 @@ class PokemonStat(PokedexObject):
     """
     def __init__(self, is_battle_only, move_damage_class, **kwargs):
         """
-
+        Constructor
         :param is_battle_only:
         :param move_damage_class:
         :param kwargs:
@@ -320,36 +409,68 @@ class PokemonMove(PokedexObject):
 
     @property
     def generation(self):
+        """
+        Gets the generation name
+        :return:
+        """
         return self._generation['name']
 
     @property
     def accuracy(self):
+        """
+        Gets the accuracy
+        :return:
+        """
         return self._accuracy
 
     @property
     def pp(self):
+        """
+        Gets the PP
+        :return:
+        """
         return self._pp
 
     @property
     def power(self):
+        """
+        Gets the power
+        :return:
+        """
         return self._power
 
     @property
     def type(self):
+        """
+        Gets the move type
+        :return:
+        """
         return self._type['name']
 
     @property
     def damage_class(self):
+        """
+        Gets the move damage class
+        :return:
+        """
         return self._damage_class['name']
 
     @property
     def short_effect(self):
+        """
+        Gets the shortened description of the move effect
+        :return:
+        """
         list_effect = []
         for effect in self._short_effect:
             list_effect.append(effect['short_effect'])
         return "".join(list_effect)
 
     def __str__(self):
+        """
+        Gets formatted string of move details
+        :return:
+        """
         return f"Name: {self.name}\n" \
                f"ID: {self.poke_id}\n" \
                f"Generation: {self.generation}\n" \

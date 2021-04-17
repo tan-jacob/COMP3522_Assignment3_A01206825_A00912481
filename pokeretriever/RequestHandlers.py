@@ -1,23 +1,26 @@
+import abc
 import datetime
 import aiohttp
 import asyncio
-import Request
-from pokeretriever.PokedexObject import *
+import pokeretriever.PokedexObject as Poke
+from pokedex import Request
 
 
 async def get_pokedex_data(key, url, session) -> dict:
     """
-
-    :param key:
-    :param url:
+    Gets the pokedex data from the PokeAPI
+    :param key: input data/request
+    :param url: reference url of the API
     :param session:
     :return:
     """
-
-    target_url = url.format(key)
-    response = await session.request(method="GET", url=target_url)
-    json_dict = await response.json()
-    return json_dict
+    try:
+        target_url = url.format(key)
+        response = await session.request(method="GET", url=target_url)
+        json_dict = await response.json()
+        return json_dict
+    except aiohttp.ContentTypeError:
+        return {'error': "error"}
 
 
 class BaseHandler(abc.ABC):
@@ -40,9 +43,12 @@ class InputHandler(BaseHandler):
     """
     Handle input mode for files or raw data
     """
-
     def handle_request(self, r: Request):
-        print("Start input handler")
+        """
+        Handle first chain
+        :param r:
+        :return:
+        """
         if r.input_data is None:
             with open(r.input_file, mode='r') as f:
                 r.raw_data = f.read().splitlines()
@@ -60,27 +66,30 @@ class PokemonRequestHandler(BaseHandler):
 
     async def handle_request(self, r: Request):
         """
-
+        Creates the Pokemon object(s) requested
         :param r:
         :return:
         """
-        print("Start pokemon handler")
         url = "https://pokeapi.co/api/v2/pokemon/{}/"
         # print(r.raw_data)
         async with aiohttp.ClientSession() as session:
             async_coroutines = [get_pokedex_data(key, url, session)
                                 for key in r.raw_data]
             responses = await asyncio.gather(*async_coroutines)
-            poke_list = []
             for res in responses:
-                poke_list.append(Pokemon(**res))
-            r.result = poke_list
+                try:
+                    r.result.append(Poke.Pokemon(**res))
+                except TypeError:
+                    r.result.append("An error occurred. Skipping this request.")
+                    pass
 
         self.next_handler.handle_request(r)
 
 
 class PokemonExpandedHandler(BaseHandler):
-
+    """
+    Handles pokemon requests when the expanded flag is active
+    """
     async def handle_request(self, r: Request):
         """
         Gets information from the Pokemon API.
@@ -97,8 +106,12 @@ class PokemonExpandedHandler(BaseHandler):
 
             list_pokemon = []
 
-            for pokemon in responses:
-                list_pokemon.append(Pokemon(**pokemon))
+            for res in responses:
+                try:
+                    list_pokemon.append(Poke.Pokemon(**res))
+                except TypeError:
+                    list_pokemon.append("An error occurred. Skipping this request.")
+                    pass
 
         for pokemon in list_pokemon:
             # Get each ability from a pokemon
@@ -110,7 +123,7 @@ class PokemonExpandedHandler(BaseHandler):
                 responses2 = await asyncio.gather(*async_coroutines2)
                 ability_list = []
                 for ability in responses2:
-                    ability_list.append(PokemonAbility(**ability))
+                    ability_list.append(Poke.PokemonAbility(**ability))
                 pokemon.abilities = ability_list
             # Get each move from a pokemon
             url = "https://pokeapi.co/api/v2/move/{}/"
@@ -121,7 +134,7 @@ class PokemonExpandedHandler(BaseHandler):
                 responses3 = await asyncio.gather(*async_coroutines3)
                 move_list = []
                 for move in responses3:
-                    move_list.append(PokemonMove(**move))
+                    move_list.append(Poke.PokemonMove(**move))
                 pokemon.moves = move_list
             # Get each stat from a pokemon
             url = "https://pokeapi.co/api/v2/stat/{}/"
@@ -132,7 +145,7 @@ class PokemonExpandedHandler(BaseHandler):
                 responses4 = await asyncio.gather(*async_coroutines4)
                 stat_list = []
                 for stat in responses4:
-                    stat_list.append(PokemonStat(**stat))
+                    stat_list.append(Poke.PokemonStat(**stat))
                 pokemon.stats = stat_list
 
         r.result = list_pokemon
@@ -147,7 +160,7 @@ class AbilityRequestHandler(BaseHandler):
 
     async def handle_request(self, r: Request):
         """
-
+        Creates PokeAbility objects
         :param r:
         :return:
         """
@@ -156,10 +169,12 @@ class AbilityRequestHandler(BaseHandler):
             async_coroutines = [get_pokedex_data(key, url, session)
                                 for key in r.raw_data]
             responses = await asyncio.gather(*async_coroutines)
-            ability_list = []
             for res in responses:
-                ability_list.append(PokemonAbility(**res))
-            r.result = ability_list
+                try:
+                    r.result.append(Poke.PokemonAbility(**res))
+                except TypeError:
+                    r.result.append("An error occurred. Skipping this request.")
+                    pass
 
         self.next_handler.handle_request(r)
 
@@ -171,30 +186,36 @@ class MoveRequestHandler(BaseHandler):
 
     async def handle_request(self, r: Request):
         """
-
+        Create PokeMove objects
         :param r:
         :return:
         """
+
         url = "https://pokeapi.co/api/v2/move/{}/"
         async with aiohttp.ClientSession() as session:
             async_coroutines = [get_pokedex_data(key, url, session)
                                 for key in r.raw_data]
-
             responses = await asyncio.gather(*async_coroutines)
-            move_list = []
             for res in responses:
-                move_list.append(PokemonMove(**res))
-            r.result = move_list
+                try:
+                    r.result.append(Poke.PokemonMove(**res))
+                except TypeError:
+                    r.result.append("An error occurred. Skipping this request.")
+                    pass
 
         self.next_handler.handle_request(r)
 
 
 class OutputHandler(BaseHandler):
     """
-
+    Handles the output of the PokeDex
     """
-
     def handle_request(self, r: Request):
+        """
+        Prints out the result to console or saves them to a specified .txt file
+        :param r:
+        :return:
+        """
         if r.output == 'print':
             for response in r.result:
                 print(response, "\n")
